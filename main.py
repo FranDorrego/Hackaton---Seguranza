@@ -16,9 +16,9 @@ from flask_socketio import SocketIO, join_room, leave_room
 # CONFIG
 # -----------------------------------
 PROCESS_URL = os.getenv("PROCESS_URL", "http://raspberrypi-1:5000/process")
-DEFAULT_TARGET_FPS = float(os.getenv("TARGET_FPS", "2"))
+DEFAULT_TARGET_FPS = float(os.getenv("TARGET_FPS", "0.5"))
 REQUEST_TIMEOUT = float(os.getenv("PROCESS_TIMEOUT", "30"))
-WAIT_FOR_VIEWERS_SLEEP = float(os.getenv("WAIT_FOR_VIEWERS_SLEEP", "0.5"))
+WAIT_FOR_VIEWERS_SLEEP = float(os.getenv("WAIT_FOR_VIEWERS_SLEEP", "0.01"))
 MAX_STORED_JOBS = int(os.getenv("MAX_STORED_JOBS", "10"))
 ALLOWED_ORIGINS = [
     origin.strip()
