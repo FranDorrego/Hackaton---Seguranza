@@ -19,6 +19,7 @@ PROCESS_URL = os.getenv("PROCESS_URL", "http://raspberrypi-1:5000/process")
 DEFAULT_TARGET_FPS = float(os.getenv("TARGET_FPS", "2"))
 REQUEST_TIMEOUT = float(os.getenv("PROCESS_TIMEOUT", "30"))
 WAIT_FOR_VIEWERS_SLEEP = float(os.getenv("WAIT_FOR_VIEWERS_SLEEP", "0.5"))
+MAX_STORED_JOBS = int(os.getenv("MAX_STORED_JOBS", "10"))
 ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
@@ -123,6 +124,48 @@ def get_live_viewer_count(stream_id):
         return len(live_viewers.get(stream_id, set()))
 
 
+def cleanup_old_completed_jobs():
+    if MAX_STORED_JOBS <= 0:
+        return
+
+    conn = get_db_connection()
+    rows = conn.execute(
+        """
+        SELECT job_id, video_path
+        FROM jobs
+        WHERE status IN ('done', 'error')
+        ORDER BY updated_at DESC, created_at DESC
+        """
+    ).fetchall()
+
+    if len(rows) <= MAX_STORED_JOBS:
+        conn.close()
+        return
+
+    rows_to_delete = rows[MAX_STORED_JOBS:]
+    job_ids_to_delete = [row["job_id"] for row in rows_to_delete]
+
+    conn.executemany(
+        "DELETE FROM results WHERE job_id = ?",
+        [(job_id,) for job_id in job_ids_to_delete],
+    )
+    conn.executemany(
+        "DELETE FROM jobs WHERE job_id = ?",
+        [(job_id,) for job_id in job_ids_to_delete],
+    )
+    conn.commit()
+    conn.close()
+
+    for row in rows_to_delete:
+        video_path = row["video_path"]
+        if video_path and os.path.exists(video_path):
+            try:
+                os.remove(video_path)
+            except OSError:
+                # Si el archivo esta bloqueado o ya no existe, no rompemos el flujo.
+                pass
+
+
 def set_job_status(job_id, status, error_message=None):
     conn = get_db_connection()
     if error_message is None:
@@ -137,6 +180,9 @@ def set_job_status(job_id, status, error_message=None):
         )
     conn.commit()
     conn.close()
+
+    if status in ("done", "error"):
+        cleanup_old_completed_jobs()
 
 
 def send_frame_to_detector(image_bytes, filename="frame.jpg", data=None):
@@ -194,6 +240,7 @@ def init_db():
 
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 init_db()
+cleanup_old_completed_jobs()
 
 # -----------------------------------
 # 📥 Upload video

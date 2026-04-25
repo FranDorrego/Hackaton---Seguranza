@@ -389,8 +389,14 @@ await fetch(`${API}/settings/fps`, {
 - `PROCESS_TIMEOUT` (default `30`)
 - `TARGET_FPS` (default `2`)
 - `WAIT_FOR_VIEWERS_SLEEP` (default `0.5` segundos)
+- `MAX_STORED_JOBS` (default `10`)
 - `ALLOWED_ORIGINS` (CSV)
   - default: `https://hack.arducloud.com,http://localhost:3000,http://127.0.0.1:3000`
+
+Politica de retencion:
+
+- El backend conserva solo los ultimos `MAX_STORED_JOBS` jobs finalizados (`done` o `error`).
+- Los jobs mas viejos se eliminan junto con sus resultados (`results`) y su archivo de video en `uploads/`.
 
 Ejemplo Linux:
 
