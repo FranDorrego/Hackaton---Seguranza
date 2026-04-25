@@ -14,12 +14,13 @@ from flask_socketio import SocketIO, join_room, leave_room
 # -----------------------------------
 PROCESS_URL = "http://raspberrypi-1:5000/process"
 TARGET_FPS = 2  # frames por segundo
-DB_FILE = "results.db"
-UPLOADS_DIR = "uploads"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(BASE_DIR, "results.db")
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 
 # -----------------------------------
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 
 def get_db_connection():
@@ -66,6 +67,10 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+init_db()
 
 # -----------------------------------
 # 📥 Upload video
@@ -289,7 +294,5 @@ def handle_unsubscribe(data):
 
 # -----------------------------------
 if __name__ == "__main__":
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
-    init_db()
     print("[stream-server] iniciado en 0.0.0.0:6000")
     socketio.run(app, host="0.0.0.0", port=6000)

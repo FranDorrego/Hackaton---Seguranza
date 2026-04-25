@@ -1,6 +1,6 @@
 flask
 flask-socketio
-eventlet
 opencv-python-headless
 requests
 gunicorn 
+simple-websocket
