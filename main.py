@@ -8,6 +8,7 @@ import requests
 from requests.exceptions import RequestException
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from flask_socketio import SocketIO, join_room, leave_room
 
 # -----------------------------------
@@ -16,6 +17,14 @@ from flask_socketio import SocketIO, join_room, leave_room
 PROCESS_URL = os.getenv("PROCESS_URL", "http://raspberrypi-1:5000/process")
 TARGET_FPS = 2  # frames por segundo
 REQUEST_TIMEOUT = float(os.getenv("PROCESS_TIMEOUT", "30"))
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS",
+        "https://hack.arducloud.com,http://localhost:3000,http://127.0.0.1:3000",
+    ).split(",")
+    if origin.strip()
+]
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(BASE_DIR, "results.db")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
@@ -24,7 +33,13 @@ http = requests.Session()
 
 # -----------------------------------
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
+CORS(
+    app,
+    resources={r"/*": {"origins": ALLOWED_ORIGINS}},
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode="threading")
 
 
 def get_db_connection():
