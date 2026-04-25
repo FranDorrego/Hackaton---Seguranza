@@ -5,6 +5,7 @@ import sqlite3
 import threading
 import uuid
 import requests
+from requests.exceptions import RequestException
 
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO, join_room, leave_room
@@ -12,11 +13,14 @@ from flask_socketio import SocketIO, join_room, leave_room
 # -----------------------------------
 # CONFIG
 # -----------------------------------
-PROCESS_URL = "http://raspberrypi-1:5000/process"
+PROCESS_URL = os.getenv("PROCESS_URL", "http://raspberrypi-1:5000/process")
 TARGET_FPS = 2  # frames por segundo
+REQUEST_TIMEOUT = float(os.getenv("PROCESS_TIMEOUT", "30"))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(BASE_DIR, "results.db")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+
+http = requests.Session()
 
 # -----------------------------------
 app = Flask(__name__)
@@ -196,11 +200,15 @@ def process_video(job_id, path):
                 }
 
                 try:
-                    res = requests.post(PROCESS_URL, files=files, timeout=30)
+                    res = http.post(PROCESS_URL, files=files, timeout=REQUEST_TIMEOUT)
                     res.raise_for_status()
                     data = res.json()
-                except Exception as e:
-                    print("Error enviando frame:", e)
+                except RequestException as e:
+                    print(f"Error enviando frame a {PROCESS_URL}: {e}")
+                    frame_idx += 1
+                    continue
+                except ValueError as e:
+                    print(f"Respuesta JSON invalida desde {PROCESS_URL}: {e}")
                     frame_idx += 1
                     continue
 

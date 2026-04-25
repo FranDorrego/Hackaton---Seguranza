@@ -211,6 +211,22 @@ pip install -r requirements.txt
 python main.py
 ```
 
+Opcional (recomendado): configurar endpoint de deteccion por variable de entorno para evitar dependencias de hostname fijo.
+
+PowerShell:
+
+```powershell
+$env:PROCESS_URL="http://100.100.100.100:5000/process"
+$env:PROCESS_TIMEOUT="30"
+python main.py
+```
+
+Linux:
+
+```bash
+PROCESS_URL="http://100.100.100.100:5000/process" PROCESS_TIMEOUT="30" python main.py
+```
+
 El servidor inicia en `0.0.0.0:6000`.
 
 ## Notas
